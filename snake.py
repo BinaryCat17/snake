@@ -123,73 +123,56 @@ class SnakeBlock(pygame.sprite.Sprite):
  
 
 class Snake():
-    def __init__(self) -> None:
+    def __init__(self, pos, dir = K_DOWN, platformer = False) -> None:
         self.isAlive = False
-        self.last_keys = []
+        self.platformer = platformer
 
-        self.head = SnakeBlock('assets/snake/head.png', (cfg.BLOCK_SIZE, cfg.BLOCK_SIZE), K_DOWN)
+        self.head = SnakeBlock('assets/snake/head.png', pos, dir)
         self.tail = [self.head]
 
         Game.all_sprites.add(self.tail)
         self.isAlive = True
-
+    
     def update(self):
-        pressed_keys = pygame.key.get_pressed()
-        if (pressed_keys[K_UP] or pressed_keys[K_DOWN] or pressed_keys[K_LEFT] or pressed_keys[K_RIGHT]):
-            self.last_keys = pressed_keys
         return self.isAlive
     
-    def move_dir(self):
-        if len(self.last_keys) == 0:
-            return None
-        elif self.last_keys[K_UP]:
-            if(self.head.last_dir == K_DOWN):
-                return None
-            return K_UP
-        elif self.last_keys[K_DOWN]:
-            if(self.head.last_dir == K_UP):
-                return None
-            return K_DOWN
-        elif self.last_keys[K_LEFT]:
-            if(self.head.last_dir == K_RIGHT):
-                return None
-            return K_LEFT
-        elif self.last_keys[K_RIGHT]:
-            if(self.head.last_dir == K_LEFT):
-                return None
-            return K_RIGHT
+    def eat(self, animal, dir):
+            animal.kill()
+            self.tail.append(SnakeBlock(animal.img, self.head.rect.center, dir))
+            Game.all_sprites.add(self.tail[-1])
 
-    def tick(self):
+    def tick(self, next_dir, offset = (0, 0)):
         if Game.out_of_field(self.tail[0].rect):
             self.isAlive = False
 
-        next_dir = self.move_dir()
-
         next_pos = self.head.move(next_dir)
+    
+        if not self.platformer:
+            blocks = [s for s in Game.all_sprites if type(s) == SnakeBlock and s != self.head]
+            block = next_pos.collidelist(blocks)
 
-        blocks = [s for s in Game.all_sprites if type(s) == SnakeBlock and s != self.head]
-        block = next_pos.collidelist(blocks)
+            if(block != -1):
+                self.isAlive = False
+                return
 
-        if(block != -1):
-            self.isAlive = False
-            return
+            animals = [s for s in Game.all_sprites if type(s) == Animal]
+            animal = next_pos.collidelist(animals)
 
-        animals = [s for s in Game.all_sprites if type(s) == Animal]
-        animal = next_pos.collidelist(animals)
-
-        if animal != -1:
-            animal = animals[animal]
-            animal.kill()
-            
-            self.tail.append(SnakeBlock(animal.img, self.head.rect.center, next_dir))
-            Game.all_sprites.add(self.tail[-1])
+            if animal != -1:
+                animal = animals[animal]
+                self.eat(animal, next_dir)
 
         for i in range(len(self.tail) - 1, 0, -1):
                 self.tail[i].clean()
                 self.tail[i].rect = self.tail[i - 1].rect
+                self.tail[i].rect.centerx += offset[0]
+                self.tail[i].rect.centery += offset[1]
                 self.tail[i].rotateAnimal(self.tail[i - 1].rect.center, self.tail[i - 1].last_dir)
  
         self.head.clean()
+        next_pos.centerx += offset[0]
+        next_pos.centery += offset[1]
+     
         self.head.rotateAnimal(next_pos.center, next_dir)
 
         for i in range(len(self.tail) - 1, 0, -1):

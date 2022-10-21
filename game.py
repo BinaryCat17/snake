@@ -27,6 +27,7 @@ class Game:
 
     def load_img(img, rot, size = (cfg.BLOCK_SIZE, cfg.BLOCK_SIZE)):
         if (img not in Game.all_images):
+            print(img)
             Game.all_images[img] = pygame.image.load(img).convert_alpha()
             Game.all_images[img] = pygame.transform.scale(Game.all_images[img], size)
 
@@ -50,7 +51,7 @@ class Game:
 
     def run(self):
         pygame.init()
-        screen = pygame.display.set_mode([cfg.SCREEN_WIDTH, cfg.SCREEN_HEIGHT])
+        Game.screen = pygame.display.set_mode([cfg.SCREEN_WIDTH, cfg.SCREEN_HEIGHT])
     
         time = pygame.time.Clock()
 
@@ -78,12 +79,12 @@ class Game:
             for entity in Game.all_sprites:
                 entity.update()
                     
-            screen.fill(cfg.BACKGROUND_COLOR)
+            Game.screen.fill(cfg.BACKGROUND_COLOR)
 
             running = self.update()
 
             for entity in Game.all_sprites:
-                screen.blit(entity.surf, entity.rect)
+                Game.screen.blit(entity.surf, entity.rect)
 
             pygame.display.flip()
         
